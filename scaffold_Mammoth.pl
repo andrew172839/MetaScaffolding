@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-#define the reasonable pdb atom name
+# define reasonable pdb atom name
 %index = (
 	"GLY_N", 1, "GLY_CA", 2, "GLY_C", 3, "GLY_O", 4,
 	"ALA_N", 5, "ALA_CA", 6, "ALA_C", 7, "ALA_O", 8, "ALA_CB", 9,
@@ -32,30 +32,36 @@
 	"ARG_CZ", 165, "ARG_NH1", 166, "ARG_NH2", 167);
 @list = keys(%index);
 $nindex = @list;
-#define the sequence in 3-letter and 1-letter for mats
+
+# define sequence in 3-letter and 1-letter for mats
 @amino3 = ("GLY", "ALA", "VAL", "LEU", "ILE", "SER", "THR", "CYS", "PRO", "PHE", "TYR", "TRP", "HIS", "ASP", "ASN", "GLU", "GLN", "MET", "LYS", "ARG");
 @amino1_upper = ("G", "A", "V", "L", "I", "S", "T", "C", "P", "F", "Y", "W", "H", "D", "N", "E", "Q", "M", "K", "R");
 @amino1_lower = ("g", "a", "v", "l", "i", "s", "t", "c", "p", "f", "y", "w", "h", "d", "n", "e", "q", "m", "k", "r");
 $namino = @amino3;
-#surface calculation binary
+
+# surface calculation binary
 $surf_bin = "~/programs/jackal/bin/surface";
-#surface area of amino acid in the ala-x-ala environment
+
+# surface area of amino acid in the ala-x-ala environment
 @area_std = (87.161, 113.564, 156.829, 179.354, 183.745, 127.427, 147.772, 142.608, 147.006, 212.730, 227.144, 247.560, 190.253, 153.640, 154.828, 193.516, 195.611, 209.203, 225.543, 255.639);
 $Mammoth = "~/bin/mammoth";
-#find scaffolds that contain the beta-sheet stem regions
-if (@ARGV! = 3) {
+
+# find scaffolds that contain beta-sheet stem regions
+if (@ARGV != 3) {
 	print STDERR "scaffold_mammoth.pl <arg1> <arg2> <arg3>\n";
-	print STDERR "<arg1>: segment epitope pdb file, e.g. epitope.pdb\n";
-	print STDERR "<arg2>: database dir, e.g. xxx/database/cullpdb-1\n";
-	print STDERR "<arg3>: ca-RMSD cutoff of the aligned region, e.g. 2.0\n";
+	print STDERR "<arg1>, segment epitope pdb file, e.g. epitope.pdb\n";
+	print STDERR "<arg2>, database dir, e.g. xxx/database/cullpdb-1\n";
+	print STDERR "<arg3>, ca-rmsd cutoff of the aligned region, e.g. 2.0\n";
 	exit;
 }
-#check the epitope pdb
+
+# check epitope pdb
 if  (not -f $ARGV[0]) {
-	printf "error: scaffold_mammoth.pl - $ARGV[0] doesn't exist\n";
+	printf "error, scaffold_mammoth.pl - $ARGV[0] doesn't exist\n";
 	exit;
 }
-#calculate solvent-accessibility for isolated epitope
+
+# solvent-accessibility for isolated epitope
 system "$surf_bin $ARGV[0] >& surf.dat";
 open(SRF, "surf.dat");
 @srftxt = <SRF>;
@@ -74,20 +80,18 @@ for ($sfscore_ref = 0.0, $j = 0; $j < $srflen; $j++) {
 		@arr = split / +/, $srftxt[$k];
 		$narr = @arr;
 		if ($narr == 4) {
-			#residue name
 			$sfrnam = $arr[$narr - 4];
-			#residue number
 			$sfrseq = $arr[$narr - 3] + 0;
 		}
 		else {
-			#residue name
 			$sfrnam = $arr[$narr - 3];
-			#residue number
 			$sfrseq = $arr[$narr - 2] + 0;
 		}
-		#surface area
+
+		# surface area
 		$sfarea = $arr[$narr - 1];
-		#calculate accessibility
+
+		# accessibility
 		for ($l = 0; $l < $namino; $l++) {
 			if ($sfrnam eq $amino3[$l]) {
 				$sfperc = $sfarea / $area_std[$l];
@@ -97,15 +101,18 @@ for ($sfscore_ref = 0.0, $j = 0; $j < $srflen; $j++) {
 		$sfscore_ref += $sfperc;
 	}
 }
-#read in the pdb
+
+# read pdb
 &readpdb($ARGV[0]);
 @rca1 = @rca;
-#get database dir
+
+# get database dir
 opendir(DIR, $ARGV[1]);
 @dirtxt = readdir(DIR);
 $dirnum = @dirtxt;
 closedir(DIR);
-#create pdb file list
+
+# create pdb file list
 for ($npdb = 0, $i = 0; $i < $dirnum; $i++) {
 	if ($dirtxt[$i] !~ /^\./) {
 		next if ($dirtxt[$i] !~ /pdb/);
@@ -114,16 +121,18 @@ for ($npdb = 0, $i = 0; $i < $dirnum; $i++) {
 		$npdb++;
 	}
 }
-#align beta-sheet stems onto each of the proteins
+
+# align beta-sheet stems onto each protein
 for ($i = 0; $i < $npdb; $i++) {
 	system "$Mammoth -e $ARGV[0] -p $pdblist[$i] > test.out";
-	#1. get the specific tm-score
+	# 1. get the specific tm-score
 	open(OUT, "test.out");
 	@outtxt = <OUT>;
 	$outlen = @outtxt;
 	close(OUT);
 	unlink "test.out";
-	#get size 1 and size 2
+
+	# size 1 and size 2
 	for ($j = 0; $j < $outlen; $j++) {
 		if ($outtxt[$j] =~ /==> PREDICTION: /) {
 			chomp $outtxt[$j + 3];
@@ -136,7 +145,8 @@ for ($i = 0; $i < $npdb; $i++) {
 			$size1 = $arr1[1] + 0;
 		}
 	}
-	#get rmsd and nalign
+
+	# rmsd
 	for ($j = 0; $j < $outlen; $j++) {
 		if ($outtxt[$j] =~ /Sstr/ and $outtxt[$j] =~ /NALI/) {
 			chomp $outtxt[$j];
@@ -144,15 +154,18 @@ for ($i = 0; $i < $npdb; $i++) {
 			$rmsd = substr($outtxt[$j], 44, 5) + 0.0;
 		}
 	}
-	#skip proteins if the aligned regions is shorter
+	# skip proteins if the aligned regions is shorter
 	next if ($nalign < $size1 - 5);
-	#skip proteins if the aligned region has high rmsd
+
+	# skip proteins if the aligned region has high rmsd
 	next if ($rmsd > $ARGV[2]);
-	#2. calculate solvent accessibility for matched region
-	#read in the query pdb
+
+	# 2. calculate solvent accessibility for matched region
+	# read query pdb
 	&readpdb($pdblist[$i]);
 	@rca2 = @rca;
-	#strucutre alignment-derived sequence alignment
+
+	# strucutre alignment-derived sequence alignment
 	$alg_seq1 = $alg_corr = $alg_seq2 = "";
 	for ($alg_seq2 = "", $j = 0; $j < $outlen; $j++) {
 		if ($outtxt[$j] =~ /^Prediction/ and $outtxt[$j + 1] =~ /^Prediction/) {
@@ -168,9 +181,11 @@ for ($i = 0; $i < $npdb; $i++) {
 			$alg_corr.= substr($outtxt[$j - 1], 11, length($outtxt[$j - 1]) - 11);
 		}
 	}
-	#skip failed alignment
+
+	# skip failed alignment
 	next if  ($alg_seq1 eq "" and $alg_seq2 eq "" and $alg_corr eq "");
-	#calculate the pair-wise correspondence
+
+	# pair-wise correspondence
 	$strlen = length($alg_corr);
 	$idx_seq1 = $idx_seq2 = 0;
 	for ($nmatch = 0, $j = 0; $j < $strlen; $j++) {
@@ -186,7 +201,8 @@ for ($i = 0; $i < $npdb; $i++) {
 			$idx_seq2++;
 		}
 	}
-	#calculate solvent-accessibility
+
+	# solvent-accessibility
 	system "$surf_bin $pdblist[$i] >& surf.dat";
 	open(SRF, "surf.dat");
 	@srftxt = <SRF>;
@@ -206,27 +222,26 @@ for ($i = 0; $i < $npdb; $i++) {
 			@arr = split / +/, $srftxt[$k];
 			$narr = @arr;
 			if ($narr == 4) {
-				#residue name
 				$sfrnam = $arr[$narr - 4];
-				#residue number
 				$sfrseq = $arr[$narr - 3] + 0;
 			}
 			else {
-				#residue name
 				$sfrnam = $arr[$narr - 3];
-				#residue number
 				$sfrseq = $arr[$narr - 2] + 0;
 			}
-			#surface area
+
+			# surface area
 			$sfarea = $arr[$narr - 1];
-			#calculate accessibility
+
+			# calculate accessibility
 			for ($l = 0; $l < $namino; $l++) {
 				if ($sfrnam eq $amino3[$l]) {
 					$sfperc = $sfarea / $area_std[$l];
 					last;
 				}
 			}
-			#check if it is the residue we want
+
+			# check residue
 			for ($l = 0; $l < $nmatch; $l++) {
 				if ($sfrseq == $pair[1][$l]) {
 					$sfscore += $sfperc;
@@ -235,11 +250,10 @@ for ($i = 0; $i < $npdb; $i++) {
 			}
 		}
 	}
-	#4. print out the output
 	printf ("%5d  %-s   %-5d%-5d%-12.5f%-12.5f\n", $i + 1, $pdbname[$i], $size2, $nalign, $rmsd, $sfscore / $sfscore_ref);
 }
 
-#read in protein pdb file and store info in global arrays
+# read protein pdb file and store info in global arrays
 sub readpdb() {
 	my $ipdb, $jpdb, $pdblen, @pdbtxt;
 	my $strtmp, @dual, $pdbnam, $find;
@@ -252,19 +266,23 @@ sub readpdb() {
 			chomp $pdbtxt[$ipdb];
 			$strtmp = substr($pdbtxt[$ipdb], 11, 10);
 			@dual = split(/ +/, $strtmp);
-			#correct cyx in tinker output
+
+			# correct cyx in tinker output
 			if ($dual[2] eq "CYX") {
 				$dual[2] = "CYS";
 			}
-			#correct ile_cd in gromacs-generated pdbs
+
+			# correct ile_cd in gromacs-generated pdbs
 			if ($dual[2] eq "ILE" and $dual[1] eq "CD") {
 				$dual[1] = "CD1";
 			}
-			#correct c-terminal oxygen in gromacs pdbs
+
+			# correct c-terminal oxygen in gromacs pdbs
 			if ($dual[1] eq "O1") {
 				$dual[1] = "O";
 			}
-			#create a unique pdb name for protein atom
+
+			# create a unique pdb name for protein atom
 			$pdbnam = $dual[2]."_".$dual[1];
 			$find = 0;
 			for ($jpdb = 0; $jpdb < $nindex; $jpdb++) {
@@ -284,7 +302,8 @@ sub readpdb() {
 			$natm++;
 		}
 	}
-	#number of residues
+
+	# # residues
 	$nres = 0;
 	$rseq_prev = -1000;
 	for ($ipdb = 0; $ipdb < $natm; $ipdb++) {
@@ -295,7 +314,8 @@ sub readpdb() {
 		}
 	}
 	$ratm_star[$nres] = $natm;
-	#calculate c-alpha trace
+
+	# c-alpha trace
 	for ($ipdb = 0; $ipdb < $nres; $ipdb++) {
 		$idx_str = $ratm_star[$ipdb];
 		$idx_end = $ratm_star[$ipdb + 1];
