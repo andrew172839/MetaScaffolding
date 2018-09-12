@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+# !/usr/bin/perl
 
-#define the reasonable pdb atom name
+# define the reasonable pdb atom name
 %index = (
 	"GLY_N", 1, "GLY_CA", 2, "GLY_C", 3, "GLY_O", 4,
 	"ALA_N", 5, "ALA_CA", 6, "ALA_C", 7, "ALA_O", 8, "ALA_CB", 9,
@@ -32,21 +32,21 @@
 	"ARG_CZ", 165, "ARG_NH1", 166, "ARG_NH2", 167);
 @list = keys(%index);
 $nindex = @list;
-#define the sequence in 3-letter and 1-letter formats
+
+# define the sequence in 3-letter and 1-letter formats
 @amino3 = ("GLY", "ALA", "VAL", "LEU", "ILE", "SER", "THR", "CYS", "PRO", "PHE", "TYR", "TRP", "HIS", "ASP", "ASN", "GLU", "GLN", "MET", "LYS", "ARG");
 @amino1_upper = ("G", "A", "V", "L", "I", "S", "T", "C", "P", "F", "Y", "W", "H", "D", "N", "E", "Q", "M", "K", "R");
 @amino1_lower = ("g", "a", "v", "l", "i", "s", "t", "c", "p", "f", "y", "w", "h", "d", "n", "e", "q", "m", "k", "r");
 $namino = @amino3;
-#set random number seed
+
 srand;
-#check the command-line arguments
+
 if (@ARGV != 2) {
 	printf "clash_score.pl <arg1> <arg2>\n";
 	printf "<arg1>: fitted scaffold pdb directory\n";
 	printf "<arg2>: antibdoy structure pdb file\n";
 	exit;
 }
-#check if the pdb structure directory exits
 if (not -d $ARGV[0]) {
 	printf "clash_score error: cannot find fitted scaffold pdb directory $ARGV[0]\n";
 	exit;
@@ -63,12 +63,13 @@ for ($nscff = 0, $i = 0; $i < $ndirtxt; $i++) {
 		$nscff++;
 	}
 }
-#check if the antibody pdb exists
+
 if (not -f $ARGV[1]) {
-	printf "clash_score error: can not find antibody pdb file $ARGV[1]\n";
+	printf "clash_score error, can not find antibody pdb file $ARGV[1]\n";
 	exit;
 }
-#read in pdb
+
+# read in pdb
 &readpdb($ARGV[1]);
 $natm_nab = $natm;
 @aseq_nab = @aseq;
@@ -79,9 +80,10 @@ $natm_nab = $natm;
 @xpdb_nab = @xpdb;
 @ypdb_nab = @ypdb;
 @zpdb_nab = @zpdb;
-#calculate clash score
+
+# calculate clash score
 for ($istr = 0; $istr < $nscff; $istr++) {
-	#read in a scaffold
+	# read in a scaffold
 	&readpdb($scfflist[$istr]);
 	$natm_scf = $natm;
 	@aseq_scf = @aseq;
@@ -92,7 +94,8 @@ for ($istr = 0; $istr < $nscff; $istr++) {
 	@xpdb_scf = @xpdb;
 	@ypdb_scf = @ypdb;
 	@zpdb_scf = @zpdb;
-	#check for atomic clashes
+
+	# check for atomic clashes
 	for ($ene = 0.0, $iene = 0; $iene < $natm_nab; $iene++) {
 		for ($jene = 0; $jene < $natm_scf; $jene++) {
 			$xdif  = $xpdb_scf[$iene] - $xpdb_nab[$jene];
@@ -105,11 +108,10 @@ for ($istr = 0; $istr < $nscff; $istr++) {
 			}
 		}
 	}
-	#print out the clash score
 	printf "$scffname[$istr]: $ene\n";
 }
 
-#read in protein pdb file and store inforamtion in global arrays
+# read in protein pdb file and store inforamtion in global arrays
 sub readpdb() {
 	my $ipdb, $jpdb, $pdblen, @pdbtxt;
 	my $strtmp, @dual, $pdbnam, $find;
@@ -133,7 +135,7 @@ sub readpdb() {
 			$natm++;
 		}
 	}
-	#number of residues
+	# # residues
 	$nres = 0;
 	$rseq_prev = -1000;
 	for ($ipdb = 0; $ipdb < $natm; $ipdb++) {
