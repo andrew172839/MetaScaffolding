@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-#define the reasonable pdb atom name
+# define reasonable pdb atom name
 %index = (
 	"GLY_N", 1, "GLY_CA", 2, "GLY_C", 3, "GLY_O", 4,
 	"ALA_N", 5, "ALA_CA", 6, "ALA_C", 7, "ALA_O", 8, "ALA_CB", 9,
@@ -32,25 +32,28 @@
 	"ARG_CZ", 165, "ARG_NH1", 166, "ARG_NH2", 167);
 @list = keys(%index);
 $nindex = @list;
-#define the sequence in 3-letter and 1-letter formats
+
+# define sequence in 3-letter and 1-letter formats
 @amino3 = ("GLY", "ALA", "VAL", "LEU", "ILE", "SER", "THR", "CYS", "PRO", "PHE", "TYR", "TRP", "HIS", "ASP", "ASN", "GLU", "GLN", "MET", "LYS", "ARG");
 @amino1_upper = ("G", "A", "V", "L", "I", "S", "T", "C", "P", "F", "Y", "W", "H", "D", "N", "E", "Q", "M", "K", "R");
 @amino1_lower = ("g", "a", "v", "l", "i", "s", "t", "c", "p", "f", "y", "w", "h", "d", "n", "e", "q", "m", "k", "r");
 $namino = @amino3;
-#check the command line
+
 if (@ARGV != 2) {
-	printf STDERR "usage: res_correlate.pl <arg1> <arg2>\n";
+	printf STDERR "usage, res_correlate.pl <arg1> <arg2>\n";
 	printf STDERR "give residue correspondence between epitope and scaffold\n";
-	printf STDERR "<arg1>: epitope pdb\n";
-	printf STDERR "<arg2>: structurally aligned scaffold pdb\n";
+	printf STDERR "<arg1>, epitope pdb\n";
+	printf STDERR "<arg2>, structurally aligned scaffold pdb\n";
 	exit;
 }
-#check the standard gp120
+
+# check standard gp120
 if (not -f $ARGV[0]) {
-	printf STDERR "error: cannot find the pdb $ARGV[0]\n";
+	printf STDERR "error, cannot find pdb $ARGV[0]\n";
 	exit;
 }
-#read in the standard gp120
+
+# read standard gp120
 &readpdb($ARGV[0]);
 $natm1 = $natm;
 $nres1 = $nres;
@@ -65,12 +68,14 @@ $nres1 = $nres;
 @xca1 = @xca;
 @yca1 = @yca;
 @zca1 = @zca;
-#check the non-standard gp120
+
+# check non-standard gp120
 if (not -f $ARGV[1]) {
-	printf STDERR "error: cannot find the pdb 2 - $ARGV[1]\n";
+	printf STDERR "error, cannot find pdb 2 - $ARGV[1]\n";
 	exit;
 }
-#read in the standard gp120
+
+# read standard gp120
 &readpdb($ARGV[1]);
 $natm2 = $natm;
 $nres2 = $nres;
@@ -85,11 +90,12 @@ $nres2 = $nres;
 @xca2 = @xca;
 @yca2 = @yca;
 @zca2 = @zca;
-#correlate the residues
-for ($i = 0; $i < $nres1; $i ++ ) {
+
+# correlate the residues
+for ($i = 0; $i < $nres1; $i++) {
 	$mindist = 100000.0;
 	$minridx = 0;
-	for ($j = 0; $j < $nres2; $j ++ ) {
+	for ($j = 0; $j < $nres2; $j++) {
 		$xdif  = $xca1[$i] - $xca2[$j];
 		$ydif  = $yca1[$i] - $yca2[$j];
 		$zdif  = $zca1[$i] - $zca2[$j];
@@ -99,10 +105,10 @@ for ($i = 0; $i < $nres1; $i ++ ) {
 			$minridx = $j;
 		}
 	}
-	printf ("%5d%3s --- %5d%3s : %8.3f\n", $rseq1[$ratm_star1[$i]], $rnam1[$ratm_star1[$i]], $rseq2[$ratm_star2[$minridx]], $rnam2[$ratm_star2[$minridx]], $mindist);
+	printf ("%5d%3s --- %5d%3s: %8.3f\n", $rseq1[$ratm_star1[$i]], $rnam1[$ratm_star1[$i]], $rseq2[$ratm_star2[$minridx]], $rnam2[$ratm_star2[$minridx]], $mindist);
 }
 
-#read in protein pdb file and store info in global arrays
+# read in protein pdb file and store info in global arrays
 sub readpdb() {
 	my $ipdb, $jpdb, $pdblen, @pdbtxt;
 	my $strtmp, @arrtmp, $pdbnam, $find;
@@ -113,9 +119,11 @@ sub readpdb() {
 	for ($natm = 0, $ipdb = 0; $ipdb < $pdblen; $ipdb++) {
 		if ($pdbtxt[$ipdb] =~ /^ATOM/) {
 			chomp $pdbtxt[$ipdb];
-			#skip the alternative positions
+
+			# skip alternative positions
 			next if (substr($pdbtxt[$ipdb], 16, 1) ne ' ' and substr($pdbtxt[$ipdb], 16, 1) ne 'A');
-			#atom name
+
+			# atom name
 			$strtmp = substr($pdbtxt[$ipdb], 12, 4);
 			@arrtmp = split /  + /, $strtmp;
 			if (substr($strtmp, 0, 1) eq ' ') {
@@ -124,20 +132,24 @@ sub readpdb() {
 			else  {
 				$anam[$natm] = $arrtmp[0];
 			}
-			#residue name
+
+			# residue name
 			$rnam[$natm] = substr($pdbtxt[$ipdb], 17, 3);
-			#correct ile_cd in gromacs-generated pdbs
+
+			# correct ile_cd in gromacs-generated pdbs
 			if ($rnam[$natm] eq "ILE" and $anam[$natm] eq "CD") {
 				$anam[$natm] = "CD1";
 			}
-			#correct c-terminal oxygen in gromacs pdbs
+
+			# correct c-terminal oxygen in gromacs pdbs
 			if ($anam[$natm] eq "O1") {
 				$anam[$natm] = "O";
 			}
-			#create a unique pdb name for protein atom
+
+			# create a unique pdb name for protein atom
 			$pdbnam = $rnam[$natm]."_".$anam[$natm];
 			$find = 0;
-			for ($jpdb = 0; $jpdb < $nindex; $jpdb ++ ) {
+			for ($jpdb = 0; $jpdb < $nindex; $jpdb++) {
 				if ($pdbnam eq $list[$jpdb]) {
 					$find = 1;
 					last;
@@ -149,10 +161,11 @@ sub readpdb() {
 			$xpdb[$natm] = substr($pdbtxt[$ipdb], 30, 8);
 			$ypdb[$natm] = substr($pdbtxt[$ipdb], 38, 8);
 			$zpdb[$natm] = substr($pdbtxt[$ipdb], 46, 8);
-			$natm ++ ;
+			$natm++;
 		}
 	}
-	#number of residues
+
+	# # residues
 	$nres = 0;
 	$rseq_prev = -1000;
 	for ($ipdb = 0; $ipdb < $natm; $ipdb++) {
@@ -170,7 +183,8 @@ sub readpdb() {
 		}
 	}
 	$ratm_star[$nres] = $natm;
-	#calculate c-alpha trace
+
+	# c-alpha trace
 	for ($ipdb = 0; $ipdb < $nres; $ipdb++) {
 		$idx_str = $ratm_star[$ipdb];
 		$idx_end = $ratm_star[$ipdb + 1];
@@ -182,7 +196,8 @@ sub readpdb() {
 			}
 		}
 	}
-	#calculate side chain geometry center
+
+	# side chain geometry center
 	for ($ipdb = 0; $ipdb < $nres; $ipdb++) {
 		$idx_str = $ratm_star[$ipdb];
 		$idx_end = $ratm_star[$ipdb + 1];
@@ -193,9 +208,10 @@ sub readpdb() {
 			$xtmp += $xpdb[$jpdb];
 			$ytmp += $ypdb[$jpdb];
 			$ztmp += $zpdb[$jpdb];
-			$ntmp ++ ;
+			$ntmp++;
 		}
-		#use ca coordinates for glycine
+
+		# use ca coordinates for glycine
 		if ($ntmp == 0) {
 			$xscc[$ipdb] = $xpdb[$idx_str + 1];
 			$yscc[$ipdb] = $ypdb[$idx_str + 1];
@@ -209,7 +225,7 @@ sub readpdb() {
 	}
 }
 
-#read in standard sequence alignment file .pir
+# read standard sequence alignment file .pir
 sub readaln() {
 	my $ialn, $alnlen, @alntxt;
 	my $iseq;
@@ -219,42 +235,51 @@ sub readaln() {
 	close(ALN);
 	for ($iseq = 0, $ialn = 0; $ialn < $alnlen; $ialn++) {
 		chomp $alntxt[$ialn];
-		#sequence starting symbol
+
+		# sequence starting symbol
 		if ($alntxt[$ialn] =~ /^>/) {
 			$iseq++;
 			next;
 		}
-		#skip the structure template line
+
+		# skip the structure template line
 		next if ($alntxt[$ialn] =~ /structureX/);
-		#skip the sequence target line
+
+		# skip the sequence target line
 		next if ($alntxt[$ialn] =~ /sequence/);
-		#fill in alignment
+
+		# fill in alignment
 		$alignment[$iseq - 1] = $alignment[$iseq - 1].$alntxt[$ialn];
 		$nalign[$iseq - 1] += length($alntxt[$ialn]);
 	}
-	#check the number of sequences
+
+	# check the number of sequences
 	if ($iseqi != 2) {
-		printf STDERR "readaln error: number of sequences in alignment != 2\n";
+		printf STDERR "readaln error, number of sequences in alignment != 2\n";
 	}
-	#delete the ending symbol
+
+	# delete the ending symbol
 	for ($ialn = 0; $ialn < $iseq; $ialn++) {
 		chop $alignment[$ialn];
 		$nalign[$ialn]--;
 	}
 }
 
-#sort a series of number
+# sort a series of number
 sub sort2() {
 	my($n, @list) = @_;
 	my($i, $j, $k, $index, $keys, $lists, @key);
-	#initialize index into the original ordering
+
+	# initialize index into the original ordering
 	for  ($i = 0; $i < $n; $i++) {
 		$key[$i] = $i;
 	}
-	#perform the heapsort of the input list
+
+	# heapsort of the input list
 	$k = $n / 2;
 	$index = $n - 1;
-	#begin the sorting
+
+	# begin sorting
 	while ($n > 0) {
 		if ($k > 0)  {
 			$k = $k - 1;
