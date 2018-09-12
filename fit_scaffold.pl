@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-#define the reasonable pdb atom name
+# define the reasonable pdb atom name
 %index = (
 	"GLY_N", 1, "GLY_CA", 2, "GLY_C", 3, "GLY_O", 4,
 	"ALA_N", 5, "ALA_CA", 6, "ALA_C", 7, "ALA_O", 8, "ALA_CB", 9,
@@ -32,14 +32,15 @@
 	"ARG_CZ", 165, "ARG_NH1", 166, "ARG_NH2", 167);
 @list = keys(%index);
 $nindex = @list;
-#define the sequence in 3-letter and 1-letter formats
+
+# define the sequence in 3-letter and 1-letter formats
 @amino3 = ("GLY", "ALA", "VAL", "LEU", "ILE", "SER", "THR", "CYS", "PRO", "PHE", "TYR", "TRP", "HIS", "ASP", "ASN", "GLU", "GLN", "MET", "LYS", "ARG");
 @amino1_upper = ("G", "A", "V", "L", "I", "S", "T", "C", "P", "F", "Y", "W", "H", "D", "N", "E", "Q", "M", "K", "R");
 @amino1_lower = ("g", "a", "v", "l", "i", "s", "t", "c", "p", "f", "y", "w", "h", "d", "n", "e", "q", "m", "k", "r");
 $namino = @amino3;
-#click parameter file
+
 $Param = "~/bin/Parameters.inp";
-#check the commond line
+
 if (@ARGV != 3) {
 	printf STDERR "fit_scaffold.pl <arg1> <arg2> <arg3>\n";
 	printf STDERR "<arg1>: loop epitope file\n";
@@ -53,19 +54,21 @@ if (@ARGV != 3) {
 	printf STDERR "6 - tmalignf\n";
 	exit;
 }
-#check and then read scaffold
+
+# check and read scaffold
 if (not -f $ARGV[0]) {
-	printf "error: epitope - $ARGV[0] doesn't exist\n";
+	printf "error, epitope - $ARGV[0] doesn't exist\n";
 	exit;
 }
-#check the file name
+
 $strlen = length($ARGV[0]);
 if (substr($ARGV[0], $strlen - 4, 4) ne ".pdb") {
-	printf "error: epitope pdb file - $ARGV[0] doesn't end with .pdb\n";
+	printf "error, epitope pdb file - $ARGV[0] doesn't end with .pdb\n";
 	exit;
 }
 $ename = substr($ARGV[0], 0, $strlen - 4);
-#read in the pdb file
+
+# read the pdb file
 &readpdb($ARGV[0]);
 $natm1 = $natm;
 $nres1 = $nres;
@@ -78,19 +81,22 @@ $nres1 = $nres;
 @ypdb1 = @ypdb;
 @zpdb1 = @zpdb;
 @rca1 = @rca;
-#check and then read loop epitope
+
+# check and then read loop epitope
 if (not -f $ARGV[1]) {
-	printf "error: scaffold protein - $ARGV[1] doesn't exist\n";
+	printf "error, scaffold protein - $ARGV[1] doesn't exist\n";
 	exit;
 }
-#check the scaffold name
+
+# check scaffold name
 $strlen = length($ARGV[1]);
 if (substr($ARGV[1], $strlen - 4, 4) ne ".pdb") {
-	printf "error: scaffold protein - $ARGV[1] doesn't end with .pdb\n";
+	printf "error, scaffold protein - $ARGV[1] doesn't end with .pdb\n";
 	exit;
 }
 $sname = substr($ARGV[1], 0, $strlen - 4);
-#read in the pdb file
+
+# read the pdb file
 &readpdb($ARGV[1]);
 $natm2 = $natm;
 $nres2 = $nres;
@@ -103,13 +109,13 @@ $nres2 = $nres;
 @ypdb2 = @ypdb;
 @zpdb2 = @zpdb;
 @rca2 = @rca;
-#fitting the scaffold protein onto epitope
+
+# fit the scaffold protein onto epitope
 if ($ARGV[2] == 1) {
-	#copy the parameter file
 	system "cp $Param ./";
-	#run Click
 	system "click $ARGV[0] $ARGV[1] > test.out";
-	#1. get the specific tm-score
+
+	# 1. get the specific tm-score
 	open(OUT, "$ename-$sname.pdb.1.clique");
 	@outtxt = <OUT>;
 	$outlen = @outtxt;
@@ -117,7 +123,8 @@ if ($ARGV[2] == 1) {
 	unlink "test.out", "Parameters.inp";
 	unlink "$ename-$sname.1.pdb", "$sname-$ename.1.pdb";
 	unlink "$ename-$sname.pdb.1.clique";
-	#calculate the pair-wise correspondence
+
+	# calculate the pair-wise correspondence
 	for ($nmatch = 0, $j = 0; $j < $outlen; $j++) {
 		if ($outtxt[$j] =~ /Chain/) {
 			for ($k = $j + 1; $k < $outlen; $k++) {
@@ -128,27 +135,31 @@ if ($ARGV[2] == 1) {
 			}
 		}
 	}
-	#check connectivity
+
+	# check connectivity
 	for ($nonlinear = 0, $j = 0; $j < $nmatch - 1; $j++) {
 		if ($pair[1][$j + 1] < $pair[1][$j]) {
 			$nonlinear = 1;
 			last;
 		}
 	}
-	#print out warning message
+
+	# print out warning message
 	if ($nonlinear == 1) {
 		printf "warning: nonlinear region matched by click\n";
 	}
 }
 elsif ($ARGV[2] == 2) {
 	system "fast $ARGV[0] $ARGV[1] > test.out";
-	#1. get the alignment score - rmsd
+
+	# 1. get the alignment score - rmsd
 	open(OUT, "test.out");
 	@outtxt = <OUT>;
 	$outlen = @outtxt;
 	close(OUT);
 	unlink "test.out";
-	#2. manage gaps in the alignment
+
+	# 2. manage gaps in the alignment
 	$alg_seq1 = $alg_corr = $alg_seq2 = "";
 	for ($alg_seq2 = "", $j = 0; $j < $outlen; $j++) {
 		if ($outtxt[$j] =~ /^ 1:/) {
@@ -166,34 +177,37 @@ elsif ($ARGV[2] == 2) {
 	}
 	$len1 = length($alg_seq1);
 	$len2 = length($alg_seq2);
-	#check if alignment strings match
+
+	# check if alignment strings match
 	if ($len1 != $len2) {
 		printf STDERR "fast alignment error for $pdblist[$i]\n";
 		exit;
 	}
 	$alg_size = length($alg_seq1);
-	#search for the first match
+
+	# search for the first match
 	for ($js = 0; $js < $alg_size; $js++) {
 		last if (substr($alg_seq1, $js, 1) ne "-" and substr($alg_seq2, $js, 1) ne "-");
 	}
-	#search for the last match (skip the *)
+
+	# search for the last match (skip the *)
 	for ($je = $alg_size - 2; $je >= 0; $je--) {
 		last if (substr($alg_seq1, $je, 1) ne "-" and substr($alg_seq2, $je, 1) ne "-");
 	}
 	$strlen = $je - $js + 1;
-	#find the correspondence section
+
+	# find the correspondence section
 	for ($iline = 0, $j = $outlen - 1; $j >= 0; $j--) {
 		if ($outtxt[$j] =~ /^ 2:/) {
 			$iline = $j + 2;
 			last;
 		}
 	}
-	#calculate the pair-wise correspondence
+
+	# calculate the pair-wise correspondence
 	for ($nmatch = 0, $j = $iline; $j < $outlen; $j++) {
 		chomp $outtxt[$j];
-		#skip empty lines
 		next if (length($outtxt[$j]) == 0);
-		#get the residue correspondence
 		@arr1 = split / +/, $outtxt[$j];
 		$narr1 = @arr1;
 		$pair[0][$nmatch] = $arr1[$narr1 - 6];
@@ -203,13 +217,15 @@ elsif ($ARGV[2] == 2) {
 }
 elsif ($ARGV[2] == 3) {
 	system "mammoth -e $ARGV[0] -p $ARGV[1] > test.out";
-	#1. get the specific tm-score
+
+	# 1. get the specific tm-score
 	open(OUT, "test.out");
 	@outtxt = <OUT>;
 	$outlen = @outtxt;
 	close(OUT);
 	unlink "test.out";
-	#strucutre alignment-derived sequence alignment
+
+	# strucutre alignment-derived sequence alignment
 	$alg_seq1 = $alg_corr = $alg_seq2 = "";
 	for ($alg_seq2 = "", $j = 0; $j < $outlen; $j++) {
 		if ($outtxt[$j] =~ /^Prediction/ and $outtxt[$j + 1] =~ /^Prediction/) {
@@ -225,9 +241,11 @@ elsif ($ARGV[2] == 3) {
 			$alg_corr .= substr($outtxt[$j - 1], 11, length($outtxt[$j - 1]) - 11);
 		}
 	}
-	#skip failed alignment
+
+	# skip failed alignment
 	next if ($alg_seq1 eq "" and $alg_seq2 eq "" and $alg_corr eq "");
-	#calculate the pair-wise correspondence
+
+	# calculate the pair-wise correspondence
 	$strlen = length($alg_corr);
 	$idx_seq1 = $idx_seq2 = 0;
 	for ($nmatch = 0, $j = 0; $j < $strlen; $j++) {
@@ -245,14 +263,15 @@ elsif ($ARGV[2] == 3) {
 	}
 }
 elsif ($ARGV[2] == 4) {
-	#run spalign
 	system "SP-align.gnu $ARGV[0] $ARGV[1] > test.out";
-	#1. get the specific tm-score
+
+	# 1. get the specific tm-score
 	open(OUT, "test.out");
 	@outtxt = <OUT>;
 	close(OUT);
 	unlink "test.out";
-	#manage gaps in the alignment
+
+	# manage gaps in the alignment
 	$alg_seq1 = $outtxt[12];
 	chomp $alg_seq1;
 	$alg_corr = $outtxt[13];
@@ -260,26 +279,32 @@ elsif ($ARGV[2] == 4) {
 	$alg_seq2 = $outtxt[14];
 	chomp $alg_seq2;
 	$alg_size = length($alg_corr);
-	#search for the first : or .
+
+	# search for the first : or .
 	for ($js = 0; $js < $alg_size; $js++) {
 		last if (substr($alg_corr, $js, 1) eq ":" or substr($alg_corr, $js, 1) eq ".");
 	}
-	#search for the last : or .
+
+	# search for the last : or .
 	for ($je = $alg_size - 1; $je >= 0; $je--) {
 		last if (substr($alg_corr, $je, 1) eq ":" or substr($alg_corr, $je, 1) eq ".");
 	}
 	$strlen = $je - $js + 1;
-	#starting & ending residues of seq 1
+
+	# starting & ending residues of seq 1
 	$seq1_str = substr($alg_seq1, 0, $js);
 	$seq1_end = substr($alg_seq1, $je + 1, length($alg_seq2) - $je - 2);
-	#starting & ending residues of seq 2
+
+	# starting & ending residues of seq 2
 	$seq2_str = substr($alg_seq2, 0, $js);
 	$seq2_end = substr($alg_seq2, $je + 1, length($alg_seq2) - $je - 2);
-	#reassign the aligned region
+
+	# reassign the aligned region
 	$alg_seq1 = substr($alg_seq1, $js, $strlen);
 	$alg_corr = substr($alg_corr, $js, $strlen);
 	$alg_seq2 = substr($alg_seq2, $js, $strlen);
-	#2. calculate the pair-wise correspondence
+
+	# 2. calculate the pair-wise correspondence
 	for ($nmatch = 0, $j = 0; $j < $strlen; $j++) {
 		if (substr($alg_corr, $j, 1) eq ":" or substr($alg_corr, $j, 1) eq ".") {
 			$pair[0][$nmatch] = $rca1[$seq1_str + $j - $ngap1];
@@ -295,9 +320,7 @@ elsif ($ARGV[2] == 4) {
 	}
 }
 elsif ($ARGV[2] == 5) {
-	#run tmalign and read TM.sup file
 	system "TMalignC -A $ARGV[0] -B $ARGV[1] -a T -o TM.sup >& /dev/null";
-	#read in the TM.sup file
 	open(SUP, "TM.sup");
 	@suptxt = <SUP>;
 	$suplen = @suptxt;
@@ -322,7 +345,6 @@ elsif ($ARGV[2] == 5) {
 	}
 }
 elsif ($ARGV[2] == 6) {
-	#run tmalign and read TM.sup file
 	system "TMalignF $ARGV[0] $ARGV[1] -o TM.sup >& /dev/null";
 	open(SUP, "TM.sup");
 	@suptxt = <SUP>;
@@ -349,14 +371,15 @@ elsif ($ARGV[2] == 6) {
 }
 open(FIT, ">res_fit.list");
 for ($i = 0; $i < $nmatch; $i++) {
-	#find the epitope residue
+	# find the epitope residue
 	for ($j = 0; $j < $natm1; $j++) {
 		if ($rseq1[$j]  ==  $pair[0][$i] and $anam1[$j] eq "CA") {
 			$aseq_epi = $aseq1[$j];
 			$chid_epi = $chid1[$j];
 		}
 	}
-	#find the corresponding epitope residue
+
+	# find the corresponding epitope residue
 	for ($j = 0; $j < $natm2; $j++) {
 		if ($rseq2[$j]  ==  $pair[1][$i] and $anam2[$j] eq "CA") {
 			$aseq_scf = $aseq2[$j];
@@ -366,10 +389,9 @@ for ($i = 0; $i < $nmatch; $i++) {
 	printf FIT ("%1s, %5d, %1s, %5d\n", $chid_epi, $aseq_epi, $chid_scf, $aseq_scf);
 }
 close(FIT);
-#fit the loop epitope onto the scaffold
 system "rmsd_sim $ARGV[0] $ARGV[1] -f res_fit.list > scaffold_fit.pdb";
 
-#read in protein pdb file and store information in global arrays
+# read in protein pdb file and store information in global arrays
 sub readpdb() {
 	my $ipdb, $jpdb, $pdblen, @pdbtxt;
 	my $strtmp, @dual, $pdbnam, $find;
@@ -382,15 +404,18 @@ sub readpdb() {
 			chomp $pdbtxt[$ipdb];
 			$strtmp = substr($pdbtxt[$ipdb], 11, 10);
 			@dual = split(/ +/, $strtmp);
-			#correct ile_cd in gromacs-generated pdbs
+
+			# correct ile_cd in gromacs-generated pdbs
 			if ($dual[2] eq "ILE" and $dual[1] eq "CD") {
 				$dual[1] = "CD1";
 			}
-			#correct c-terminal oxygen in gromacs pdbs
+
+			# correct c-terminal oxygen in gromacs pdbs
 			if ($dual[1] eq "O1") {
 				$dual[1] = "O";
 			}
-			#create a unique pdb name for protein atom
+
+			# create a unique pdb name for protein atom
 			$pdbnam = $dual[2]."_".$dual[1];
 			$find = 0;
 			for ($jpdb = 0; $jpdb < $nindex; $jpdb++) {
@@ -411,7 +436,7 @@ sub readpdb() {
 			$natm++;
 		}
 	}
-	#number of residues
+	# # residues
 	$nres = 0;
 	$rseq_prev = -1000;
 	for ($ipdb = 0; $ipdb < $natm; $ipdb++) {
@@ -422,7 +447,7 @@ sub readpdb() {
 		}
 	}
 	$ratm_star[$nres] = $natm;
-	#calculate c-alpha trace
+	# c-alpha trace
 	for ($ipdb = 0; $ipdb < $nres; $ipdb++) {
 		$idx_str = $ratm_star[$ipdb];
 		$idx_end = $ratm_star[$ipdb + 1];
@@ -437,7 +462,6 @@ sub readpdb() {
 	}
 }
 
-#write a protein pdb file in standard format
 sub writepdb() {
 	my $ipdb;
 	open(PROPDB, ">$_[0]");
