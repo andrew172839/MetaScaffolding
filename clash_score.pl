@@ -1,4 +1,4 @@
-# !/usr/bin/perl
+#!/usr/bin/perl
 
 # define the reasonable pdb atom name
 %index = (

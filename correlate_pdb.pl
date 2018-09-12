@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-#define the reasonable pdb atom name
+# define the reasonable pdb atom name
 %index = (
 	"GLY_N", 1, "GLY_CA", 2, "GLY_C", 3, "GLY_O", 4,
 	"ALA_N", 5, "ALA_CA", 6, "ALA_C", 7, "ALA_O", 8, "ALA_CB", 9,
@@ -32,26 +32,29 @@
 	"ARG_CZ", 165, "ARG_NH1", 166, "ARG_NH2", 167);
 @list = keys(%index);
 $nindex = @list;
-#define the sequence in 3-letter and 1-letter formats
+
+# define the sequence in 3-letter and 1-letter formats
 @amino3 = ("GLY", "ALA", "VAL", "LEU", "ILE", "SER", "THR", "CYS", "PRO", "PHE", "TYR", "TRP", "HIS", "ASP", "ASN", "GLU", "GLN", "MET", "LYS", "ARG");
 @amino1_upper = ("G", "A", "V", "L", "I", "S", "T", "C", "P", "F", "Y", "W", "H", "D", "N", "E", "Q", "M", "K", "R");
 @amino1_lower = ("g", "a", "v", "l", "i", "s", "t", "c", "p", "f", "y", "w", "h", "d", "n", "e", "q", "m", "k", "r");
 $namino = @amino3;
-#check the command-line arguments
+
 if (@ARGV ne 2) {
 	printf STDERR "correlate_pdb.pl <arg1> <arg2>\n";
 	printf STDERR "<arg1>: fitted scaffold pdb\n";
 	printf STDERR "<arg2>: epitope pdb\n";
 	exit;
 }
-#check if the protein pdb exists
+
 if (not -f $ARGV[0]) {
 	printf STDERR "shiftseq.pl error: $ARGV[0] doesn't exist\n";
 	exit;
 }
-#read input protein pdb file
+
+# read protein pdb
 &readpdb($ARGV[0]);
-#global variables and arrays
+
+# global variables and arrays
 $natm1 = $natm;
 @anam1 = @anam;
 @rnam1 = @rnam;
@@ -65,9 +68,11 @@ $natm1 = $natm;
 @zca1 = @zca;
 $nres1 = $nres;
 @ratm_star1 = @ratm_star;
-#read input epitope pdb file
+
+# read epitope pdb
 &readpdb($ARGV[1]);
-#global variables and arrays
+
+# global variables and arrays
 $natm2 = $natm;
 @anam2 = @anam;
 @rnam2 = @rnam;
@@ -81,7 +86,8 @@ $natm2 = $natm;
 @zca2 = @zca;
 $nres2 = $nres;
 @ratm_star2 = @ratm_star;
-#correlate two pdbs
+
+# correlate two pdbs
 for ($i = 0; $i < $nres1; $i++) {
 	$distmin = 1000.0;
 	$indxmin = 0;
@@ -100,7 +106,7 @@ for ($i = 0; $i < $nres1; $i++) {
 	}
 }
 
-#read in protein pdb file and store information in global arrays
+# read protein pdb file and store information in global arrays
 sub readpdb() {
 	my $ipdb, $jpdb, $pdblen, @pdbtxt;
 	my $strtmp, @dual, $pdbnam, $find;
@@ -113,15 +119,15 @@ sub readpdb() {
 			chomp $pdbtxt[$ipdb];
 			$strtmp = substr($pdbtxt[$ipdb], 11, 10);
 			@dual = split(/ +/, $strtmp);
-			#correct ile_cd in gromacs-generated pdbs
+			# correct ile_cd in gromacs-generated pdbs
 			if ($dual[2] eq "ILE" and $dual[1] eq "CD") {
 				$dual[1] = "CD1";
 			}
-			#correct c-terminal oxygen in gromacs pdbs
+			# correct c-terminal oxygen in gromacs pdbs
 			if ($dual[1] eq "O1") {
 				$dual[1] = "O";
 			}
-			#create a unique pdb name for protein atom
+			# create a unique pdb name for protein atom
 			$pdbnam = $dual[2]."_".$dual[1];
 			$find = 0;
 			for ($jpdb = 0; $jpdb < $nindex; $jpdb++) {
@@ -141,7 +147,8 @@ sub readpdb() {
 			$natm++;
 		}
 	}
-	#number of residues
+
+	# # residues
 	$nres = 0;
 	$rseq_prev = -1000;
 	for ($ipdb = 0; $ipdb < $natm; $ipdb++) {
@@ -152,7 +159,8 @@ sub readpdb() {
 		}
 	}
 	$ratm_star[$nres] = $natm;
-	#calculate c-alpha trace
+
+	# c-alpha trace
 	for ($ipdb = 0; $ipdb < $nres; $ipdb++) {
 		$idx_str = $ratm_star[$ipdb];
 		$idx_end = $ratm_star[$ipdb + 1];
@@ -164,7 +172,8 @@ sub readpdb() {
 			}
 		}
 	}
-	#calculate c-beta trace
+
+	# c-beta trace
 	for ($ipdb = 0; $ipdb < $nres; $ipdb++) {
 		$idx_str = $ratm_star[$ipdb];
 		$idx_end = $ratm_star[$ipdb + 1];
@@ -174,7 +183,7 @@ sub readpdb() {
 				$ycb[$ipdb] = $ypdb[$jpdb];
 				$zcb[$ipdb] = $zpdb[$jpdb];
 			}
-			#use ca coordinates for glycan
+			# use ca coordinates for glycan
 			if ($anam[$jpdb] eq 'CA' and $rnam[$jpdb] eq 'GLY') {
 				$xcb[$ipdb] = $xpdb[$jpdb];
 				$ycb[$ipdb] = $ypdb[$jpdb];
@@ -182,7 +191,8 @@ sub readpdb() {
 			}
 		}
 	}
-	#calculate side chain geometry center
+
+	# side chain geometry center
 	for ($ipdb = 0; $ipdb < $nres; $ipdb++) {
 		$idx_str = $ratm_star[$ipdb];
 		$idx_end = $ratm_star[$ipdb + 1];
@@ -195,7 +205,8 @@ sub readpdb() {
 			$ztmp += $zpdb[$jpdb];
 			$ntmp++;
 		}
-		#use ca coordinates for glycine
+
+		# use ca coordinates for glycine
 		if ($ntmp == 0) {
 			for ($jpdb = $idx_str; $jpdb < $idx_end; $jpdb++) {
 				if ($anam[$jpdb] eq 'CA') {
@@ -213,7 +224,6 @@ sub readpdb() {
 	}
 }
 
-#write a protein pdb file in standard format
 sub writepdb() {
 	my $ipdb;
 	open(PROPDB, ">$_[0]");
