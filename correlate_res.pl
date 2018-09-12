@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-#define the reasonable pdb atom name
+# define the reasonable pdb atom name
 %index = (
 	"GLY_N", 1, "GLY_CA", 2, "GLY_C", 3, "GLY_O", 4,
 	"ALA_N", 5, "ALA_CA", 6, "ALA_C", 7, "ALA_O", 8, "ALA_CB", 9,
@@ -32,23 +32,25 @@
 	"ARG_CZ", 165, "ARG_NH1", 166, "ARG_NH2", 167);
 @list = keys(%index);
 $nindex = @list;
-#define the sequence in 3-letter and 1-letter formats
+
+# define the sequence in 3-letter and 1-letter formats
 @amino3 = ("GLY", "ALA", "VAL", "LEU", "ILE", "SER", "THR", "CYS", "PRO", "PHE", "TYR", "TRP", "HIS", "ASP", "ASN", "GLU", "GLN", "MET", "LYS", "ARG");
 @amino1_upper = ("G", "A", "V", "L", "I", "S", "T", "C", "P", "F", "Y", "W", "H", "D", "N", "E", "Q", "M", "K", "R");
 @amino1_lower = ("g", "a", "v", "l", "i", "s", "t", "c", "p", "f", "y", "w", "h", "d", "n", "e", "q", "m", "k", "r");
 $namino = @amino3;
-#cull-2 pdb database
+
 $cullpdb = "~/projects/database/cullpdb-2";
-#check the commond line
+
 if (@ARGV != 2) {
 	printf STDERR "fit_scaffold.pl <arg1> <arg2>\n";
 	printf STDERR "<arg1>: loop epitope file\n";
 	printf STDERR "<arg2>: scaffold pdb file\n";
 	exit;
 }
-#check and then read scaffold
+
+# check and read scaffold
 if (not -f $ARGV[0]) {
-	printf "error: loop epitope - $ARGV[0] doesn't exist\n";
+	printf "error, loop epitope - $ARGV[0] doesn't exist\n";
 	exit;
 }
 &readpdb($ARGV[0]);
@@ -61,9 +63,10 @@ $natm_scf = $natm;
 @xpdb_scf = @xpdb;
 @ypdb_scf = @ypdb;
 @zpdb_scf = @zpdb;
-#copy the pdb file
+
 system "cp $cullpdb/$ARGV[1] .";
-#check and then read loop epitope
+
+# check and read loop epitope
 if  (not -f $ARGV[1]) {
 	printf "error: scaffold protein - $ARGV[1] doesn't exist\n";
 	exit;
@@ -78,7 +81,8 @@ $natm_epi = $natm;
 @xpdb_epi = @xpdb;
 @ypdb_epi = @ypdb;
 @zpdb_epi = @zpdb;
-#run tmalign and read TM.sup file
+
+# run tmalign and read tm.sup
 system "TMalign $ARGV[1] $ARGV[0] -o TM.sup >& /dev/null";
 open(SUP, "TM.sup");
 @suptxt = <SUP>;
@@ -102,9 +106,10 @@ for ($idx = 0, $i = 0; $i < $suplen; $i++) {
 		}
 	}
 }
-#correlate residues
+
+# correlate residues
 for ($i = 0; $i < $nmatch; $i++) {
-	#find the scaffold residue
+	# find the scaffold residue
 	for ($j = 0; $j < $natm_scf; $j++) {
 		if ($rseq_scf[$j] == $pair[1][$i] and $anam_scf[$j] eq "CA") {
 			$aseq1 = $aseq_scf[$j];
@@ -113,7 +118,8 @@ for ($i = 0; $i < $nmatch; $i++) {
 			$rnam1 = $rnam_scf[$j];
 		}
 	}
-	#find the corresponding epitope residue
+
+	# find the corresponding epitope residue
 	for ($j = 0; $j < $natm_epi; $j++) {
 		if ($rseq_epi[$j] == $pair[0][$i] and $anam_epi[$j] eq "CA") {
 			$aseq2 = $aseq_epi[$j];
@@ -125,7 +131,7 @@ for ($i = 0; $i < $nmatch; $i++) {
 	printf ("%1s:%3s%d <===> %1s:%3s%d\n", $chid1, $rnam1, $rseq1, $chid2, $rnam2, $rseq2);
 }
 
-#read in protein pdb file and store information in global arrays
+# read in protein pdb file and store information in global arrays
 sub readpdb() {
 	my $ipdb, $jpdb, $pdblen, @pdbtxt;
 	my $strtmp, @dual, $pdbnam, $find;
@@ -138,15 +144,18 @@ sub readpdb() {
 			chomp $pdbtxt[$ipdb];
 			$strtmp = substr($pdbtxt[$ipdb], 11, 10);
 			@dual = split(/ +/, $strtmp);
-			#correct ile_cd in gromacs-generated pdbs
+
+			# correct ile_cd in gromacs-generated pdbs
 			if ($dual[2] eq "ILE" and $dual[1] eq "CD") {
 				$dual[1] = "CD1";
 			}
-			#correct c-terminal oxygen in gromacs pdbs
+
+			# correct c-terminal oxygen in gromacs pdbs
 			if ($dual[1] eq "O1") {
 				$dual[1] = "O";
 			}
-			#create a unique pdb name for protein atom
+
+			# create a unique pdb name for protein atom
 			$pdbnam = $dual[2]."_".$dual[1];
 			$find = 0;
 			for ($jpdb = 0; $jpdb < $nindex; $jpdb++) {
@@ -169,7 +178,8 @@ sub readpdb() {
 			$natm++;
 		}
 	}
-	#number of residues
+
+	# # residues
 	$nres = 0;
 	$rseq_prev = -1000;
 	for ($ipdb = 0; $ipdb < $natm; $ipdb++) {
@@ -180,7 +190,8 @@ sub readpdb() {
 		}
 	}
 	$ratm_star[$nres] = $natm;
-	#calculate side chain geometry center
+
+	# calculate side chain geometry center
 	for ($ipdb = 0; $ipdb < $nres; $ipdb++) {
 		$idx_str = $ratm_star[$ipdb];
 		$idx_end = $ratm_star[$ipdb + 1];
@@ -193,7 +204,8 @@ sub readpdb() {
 			$ztmp += $zpdb[$jpdb];
 			$ntmp++;
 		}
-		#use ca coordinates for glycine
+
+		# use ca coordinates for glycine
 		if ($ntmp == 0) {
 			$xscc[$ipdb] = $xpdb[$idx_str + 1];
 			$yscc[$ipdb] = $ypdb[$idx_str + 1];
@@ -207,7 +219,6 @@ sub readpdb() {
 	}
 }
 
-#write a protein pdb file in standard format
 sub writepdb() {
 	my $ipdb;
 	open(PROPDB, ">$_[0]");
