@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-#define the reasonable pdb atom name
+# define reasonable pdb atom name
 %index = (
 	"GLY_N", 1, "GLY_CA", 2, "GLY_C", 3, "GLY_O", 4,
 	"ALA_N", 5, "ALA_CA", 6, "ALA_C", 7, "ALA_O", 8, "ALA_CB", 9,
@@ -32,30 +32,35 @@
 	"ARG_CZ", 165, "ARG_NH1", 166, "ARG_NH2", 167);
 @list = keys(%index);
 $nindex = @list;
-#define the sequence in 3-letter and 1-letter formats
+
+# define sequence in 3-letter and 1-letter formats
 @amino3 = ("GLY", "ALA", "VAL", "LEU", "ILE", "SER", "THR", "CYS", "PRO", "PHE", "TYR", "TRP", "HIS", "ASP", "ASN", "GLU", "GLN", "MET", "LYS", "ARG");
 @amino1_upper = ("G", "A", "V", "L", "I", "S", "T", "C", "P", "F", "Y", "W", "H", "D", "N", "E", "Q", "M", "K", "R");
 @amino1_lower = ("g", "a", "v", "l", "i", "s", "t", "c", "p", "f", "y", "w", "h", "d", "n", "e", "q", "m", "k", "r");
 $namino = @amino3;
-#surface calculation binary
+
+# surface calculation binary
 $surf_bin = "~/programs/jackal/bin/surface";
-#surface area of amino acid in the ala-x-ala environment
+
+# surface area of amino acid in ala-x-ala environment
 @area_std = (87.161, 113.564, 156.829, 179.354, 183.745, 127.427, 147.772, 142.608, 147.006, 212.730, 227.144, 247.560, 190.253, 153.640, 154.828, 193.516, 195.611, 209.203, 225.543, 255.639);
 $TMalign = "~/bin/TMalignC";
-#find scaffolds that contain the beta-sheet stem regions
-if (@ARGV!= 3) {
+# find scaffolds that contain the beta-sheet stem regions
+if (@ARGV != 3) {
 	print STDERR "scaffold_tmalignc.pl <arg1> <arg2> <arg3>\n";
-	print STDERR "<arg1>: segment epitope pdb file, e.g. epitope.pdb\n";
-	print STDERR "<arg2>: database dir, e.g. xxx/database/cullpdb-1\n";
-	print STDERR "<arg3>: ca-rmsd cutoff of the aligned region, e.g., 2.0\n";
+	print STDERR "<arg1>, segment epitope pdb file, e.g. epitope.pdb\n";
+	print STDERR "<arg2>, database dir, e.g. xxx/database/cullpdb-1\n";
+	print STDERR "<arg3>, ca-rmsd cutoff of the aligned region, e.g., 2.0\n";
 	exit;
 }
-#check the epitope pdb
+
+# check epitope pdb
 if  (not -f $ARGV[0]) {
 	printf "error: scaffold_tmlignc.pl - $ARGV[0] doesn't exist\n";
 	exit;
 }
-#calculate solvent-accessibility for isolated epitope
+
+# solvent-accessibility for isolated epitope
 system "$surf_bin $ARGV[0] >& surf.dat";
 open(SRF, "surf.dat");
 @srftxt = <SRF>;
@@ -74,20 +79,18 @@ for ($sfscore_ref = 0.0, $j = 0; $j < $srflen; $j++) {
 		@arr = split / +/, $srftxt[$k];
 		$narr = @arr;
 		if ($narr == 4) {
-			#residue name
 			$sfrnam = $arr[$narr - 4];
-			#residue number
 			$sfrseq = $arr[$narr - 3] + 0;
 		}
 		else {
-			#residue name
 			$sfrnam = $arr[$narr - 3];
-			#residue number
 			$sfrseq = $arr[$narr - 2] + 0;
 		}
-		#surface area
+
+		# surface area
 		$sfarea = $arr[$narr - 1];
-		#calculate accessibility
+
+		# accessibility
 		for ($l = 0; $l < $namino; $l++) {
 			if ($sfrnam eq $amino3[$l]) {
 				$sfperc = $sfarea / $area_std[$l];
@@ -97,12 +100,14 @@ for ($sfscore_ref = 0.0, $j = 0; $j < $srflen; $j++) {
 		$sfscore_ref += $sfperc;
 	}
 }
-#get database dir
+
+# get database dir
 opendir(DIR, $ARGV[1]);
 @dirtxt = readdir(DIR);
 $dirnum = @dirtxt;
 closedir(DIR);
-#create pdb file list
+
+# create pdb file list
 for ($npdb = 0, $i = 0; $i < $dirnum; $i++) {
 	if ($dirtxt[$i] !~ /^\./) {
 		next if ($dirtxt[$i] !~ /pdb/);
@@ -111,46 +116,55 @@ for ($npdb = 0, $i = 0; $i < $dirnum; $i++) {
 		$npdb++;
 	}
 }
-#align beta-sheet stems onto each of the proteins
+
+# align beta-sheet stems onto each protein
 for ($i = 0; $i < $npdb; $i++) {
 	system "$TMalign -A $ARGV[0] -B $pdblist[$i] -a T -o TM.sup > test.out";
-	#1. get the specif ic tm-score
+
+	# 1. get the specif ic tm-score
 	open(OUT, "test.out");
 	@outtxt = <OUT>;
 	close(OUT);
 	unlink "test.out";
-	#get size 1 (of structure a)
+
+	# size 1 (of structure a)
 	chomp $outtxt[9];
 	@arr1 = split /:/, $outtxt[9];
 	@arr2 = split / +/, $arr1[1];
 	$narr2 = @arr2;
 	$size1 = $arr2[$narr2 - 2] + 0;
-	#get size 2 (of structure b)
+
+	# size 2 (of structure b)
 	chomp $outtxt[10];
 	@arr1 = split /:/, $outtxt[10];
 	@arr2 = split / +/, $arr1[1];
 	$narr2 = @arr2;
 	$size2 = $arr2[$narr2 - 2] + 0;
-	#get nalign
+
+	# nalign
 	chomp $outtxt[12];
 	@arr1 = split /,/, $outtxt[12];
 	@arr2 = split /=/, $arr1[0];
 	$narr2 = @arr2;
 	$nalign = $arr2[$narr2 - 1] + 0;
-	#skip proteins if the aligned regions is 2-aa shorter
+
+	# skip proteins if the aligned regions is 2-aa shorter
 	next if  ($nalign < $size1 - 2);
-	#get rmsd
+
+	# rmsd
 	@arr1 = split /,/, $outtxt[12];
 	@arr2 = split /=/, $arr1[1];
 	$narr2 = @arr2;
 	$rmsd = $arr2[$narr2 - 1] + 0.0;
-	#get tm-Score
+
+	# tm-Score
 	chomp $outtxt[16];
 	@arr1 = split / +/, $outtxt[16];
 	@arr2 = split /=/, $arr1[0];
 	$narr2 = @arr2;
 	$score = $arr2[$narr2 - 1] + 0.0;
-	#2. manage gaps in the alignment
+
+	# 2. manage gaps in alignment
 	$alg_seq1 = $outtxt[34];
 	chomp $alg_seq1;
 	$alg_corr = $outtxt[35];
@@ -160,19 +174,23 @@ for ($i = 0; $i < $npdb; $i++) {
 	$alg_size = length($alg_corr);
 	@arr = split / +/, $alg_corr;
 	$narr = @arr;
-	#search for  the first : or .
+
+	# search for  the first : or .
 	for ($js = 0; $js < $alg_size; $js++) {
 		last if (substr($alg_corr, $js, 1) eq ":" or substr($alg_corr, $js, 1) eq ".");
 	}
-	#search for  the last : or .
+
+	# search for  the last : or .
 	for ($je = $alg_size - 1; $je> = 0; $je--) {
 		last if (substr($alg_corr, $je, 1) eq ":" or substr($alg_corr, $je, 1) eq ".");
 	}
+
 	$strlen = $je - $js + 1;
-	#3 skip proteins if the aligned region has high rmsd
+	# 3 skip proteins if the aligned region has high rmsd
 	next if ($rmsd > $ARGV[2]);
-	#2. calculate solvent accessibility for matched region
-	#read in the TM.sup file
+
+	#  solvent accessibility for matched region
+	# read in the TM.sup file
 	open(SUP, "TM.sup");
 	@suptxt = <SUP>;
 	$suplen = @suptxt;
@@ -195,7 +213,8 @@ for ($i = 0; $i < $npdb; $i++) {
 			}
 		}
 	}
-	#calculate solvent-accessibility
+
+	# solvent-accessibility
 	system "$surf_bin $pdblist[$i] >& surf.dat";
 	open(SRF, "surf.dat");
 	@srftxt = <SRF>;
@@ -215,27 +234,29 @@ for ($i = 0; $i < $npdb; $i++) {
 			@arr = split / +/, $srftxt[$k];
 			$narr = @arr;
 			if ($narr == 4) {
-				#residue name
+				# residue name
 				$sfrnam = $arr[$narr - 4];
-				#residue number
+				# residue number
 				$sfrseq = $arr[$narr - 3] + 0;
 			}
 			else {
-				#residue name
+				# residue name
 				$sfrnam = $arr[$narr - 3];
-				#residue number
+				# residue number
 				$sfrseq = $arr[$narr - 2] + 0;
 			}
-			#surface area
+			# surface area
 			$sfarea = $arr[$narr - 1];
-			#calculate accessibility
+
+			# calculate accessibility
 			for ($l = 0; $l < $namino; $l++) {
 				if ($sfrnam eq $amino3[$l]) {
 					$sfperc = $sfarea / $area_std[$l];
 					last;
 				}
 			}
-			#check if it is the residue we want
+
+			# check residue
 			for ($l = 0; $l < $nmatch; $l++) {
 				if ($sfrseq == $pair[0][$l]) {
 					$sfscore += $sfperc;
@@ -244,6 +265,5 @@ for ($i = 0; $i < $npdb; $i++) {
 			}
 		}
 	}
-	#4. print out the output
 	printf ("%5d  %-s   %-5d%-5d%-12.5f%-8.3f%-12.5f\n", $i + 1, $pdbname[$i], $size2, $nalign, $rmsd, $score, $sfscore / $sfscore_ref);
 }
